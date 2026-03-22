@@ -1,169 +1,74 @@
-"""Servidor FastAPI para el chatbot."""
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from typing import Dict, Any, Set
-from loguru import logger
+"""Servidor FastAPI — Hotel Merecure Chatbot."""
+import os
 import sys
 import time
+from typing import Dict
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+# ── Logger ────────────────────────────────────────────────
+try:
+    from loguru import logger
+    # Crear carpeta de logs si no existe
+    os.makedirs("logs", exist_ok=True)
+    logger.remove()
+    logger.add(sys.stderr, level="DEBUG")
+    logger.add("logs/hotel_{time}.log", rotation="1 day", retention="7 days", level="INFO")
+except ImportError:
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger("hotel")
+
+# ── Config ────────────────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
 
 from config.settings import HOST, PORT, DEBUG
+
+# ── Chatbot ───────────────────────────────────────────────
 from chatbot import ChatbotEngine
-from services import SheetsClient, CalendarClient, EvolutionAPI
+from services.evolution_api import EvolutionAPI
 
-# Configurar logging
-logger.remove()
-logger.add(sys.stderr, level="INFO" if not DEBUG else "DEBUG")
-logger.add("logs/barberia_{time}.log", rotation="1 day", retention="30 days", level="INFO")
+chatbot = ChatbotEngine()
+evolution = EvolutionAPI()
 
-# Inicializar FastAPI
+# ── App ───────────────────────────────────────────────────
 app = FastAPI(
-    title="Barbería Churco Chatbot",
-    description="Sistema de agendamiento por WhatsApp",
-    version="2.0.0"
+    title="Hotel Merecure Chatbot",
+    description="Asistente virtual Hotel Merecure — Cravo Norte, Arauca",
+    version="1.0.0"
 )
 
-# Cache para evitar mensajes duplicados
+# Cache anti-duplicados (5 segundos)
 mensaje_cache: Dict[str, float] = {}
-CACHE_TIMEOUT = 5  # segundos
-
-# Inicializar servicios
-try:
-    chatbot = ChatbotEngine()
-    sheets = SheetsClient()
-    calendar = CalendarClient()
-    evolution = EvolutionAPI()
-except FileNotFoundError as e:
-    logger.error(str(e))
-    logger.error("\n⚠️  SOLUCIÓN:")
-    logger.error("   1. Ve a Google Cloud Console")
-    logger.error("   2. Crea un Service Account")
-    logger.error("   3. Descarga las credenciales JSON")
-    logger.error("   4. Guárdalo como 'service_account.json' en la raíz del proyecto")
-    sys.exit(1)
-except Exception as e:
-    logger.error(f"❌ Error inicializando servicios: {e}")
-    sys.exit(1)
+CACHE_TIMEOUT = 5
 
 
-class SendMessageRequest(BaseModel):
-    """Modelo para enviar mensajes."""
-    telefono: str
-    mensaje: str
-
+# ── Endpoints ─────────────────────────────────────────────
 
 @app.get("/")
 async def root():
-    """Endpoint raíz."""
     return {
         "status": "online",
-        "service": "Barbería Churco Chatbot",
-        "version": "2.0.0"
+        "service": "Hotel Merecure Chatbot",
+        "version": "1.0.0"
     }
-
-
-@app.post("/")
-async def root_webhook(request: Request):
-    """Webhook en raíz (procesa igual que /webhook)."""
-    try:
-        data = await request.json()
-        logger.info(f"📨 Webhook recibido en /: {data}")
-        return await procesar_webhook_interno(data)
-    except Exception as e:
-        logger.error(f"❌ Error procesando webhook en /: {e}")
-        return {"status": "error", "message": str(e)}
-
-
-async def procesar_webhook_interno(data: dict) -> dict:
-    """Procesa el webhook internamente."""
-    event_type = data.get("event")
-    
-    if event_type == "messages.upsert":
-        message_data = data.get("data", {})
-        key = message_data.get("key", {})
-        message = message_data.get("message", {})
-        
-        # Obtener teléfono del remitente
-        telefono = key.get("remoteJid", "").replace("@s.whatsapp.net", "")
-        
-        # Obtener texto del mensaje
-        texto = ""
-        if "conversation" in message:
-            texto = message["conversation"]
-        elif "extendedTextMessage" in message:
-            texto = message["extendedTextMessage"].get("text", "")
-        
-        if telefono and texto:
-            # Crear ID único para este mensaje
-            message_id = key.get("id", "")
-            cache_key = f"{telefono}:{message_id}:{texto}"
-            
-            # Verificar si ya procesamos este mensaje recientemente
-            now = time.time()
-            if cache_key in mensaje_cache:
-                if now - mensaje_cache[cache_key] < CACHE_TIMEOUT:
-                    logger.info(f"⏭️  Mensaje duplicado ignorado: {telefono}")
-                    return {"status": "ok", "message": "duplicado"}
-            
-            # Guardar en cache
-            mensaje_cache[cache_key] = now
-            
-            # Limpiar cache antiguo
-            keys_to_delete = [k for k, v in mensaje_cache.items() if now - v > CACHE_TIMEOUT]
-            for k in keys_to_delete:
-                del mensaje_cache[k]
-            
-            logger.info(f"💬 Mensaje de {telefono}: {texto}")
-            
-            # Procesar mensaje con el chatbot
-            respuesta = chatbot.procesar_mensaje(telefono, texto)
-            
-            # Enviar respuesta
-            evolution.send_message(telefono, respuesta)
-            logger.info(f"✅ Respuesta enviada a {telefono}")
-    
-    return {"status": "ok"}
 
 
 @app.get("/health")
-async def health_check():
-    """Verifica el estado del sistema."""
-    status = {
+async def health():
+    estado_evolution = "unknown"
+    try:
+        info = evolution.get_instance_status()
+        estado_evolution = "connected" if info else "error"
+    except Exception as e:
+        estado_evolution = f"error: {e}"
+
+    return {
         "status": "healthy",
-        "sheets": "unknown",
-        "calendar": "unknown",
-        "evolution": "unknown"
+        "evolution_api": estado_evolution
     }
-    
-    # Verificar Google Sheets
-    try:
-        if sheets.test_connection():
-            status["sheets"] = "connected"
-        else:
-            status["sheets"] = "error"
-    except Exception as e:
-        status["sheets"] = f"error: {str(e)}"
-    
-    # Verificar Google Calendar
-    try:
-        if calendar.test_connection():
-            status["calendar"] = "connected"
-        else:
-            status["calendar"] = "error"
-    except Exception as e:
-        status["calendar"] = f"error: {str(e)}"
-    
-    # Verificar Evolution API
-    try:
-        instance_status = evolution.get_instance_status()
-        if instance_status:
-            status["evolution"] = "connected"
-        else:
-            status["evolution"] = "error"
-    except Exception as e:
-        status["evolution"] = f"error: {str(e)}"
-    
-    return status
 
 
 @app.post("/webhook")
@@ -171,39 +76,106 @@ async def webhook(request: Request):
     """Recibe mensajes de WhatsApp vía Evolution API."""
     try:
         data = await request.json()
-        logger.info(f"📨 Webhook recibido: {data}")
-        return await procesar_webhook_interno(data)
+        logger.debug(f"📨 Webhook recibido: {data}")
+        return await _procesar_webhook(data)
     except Exception as e:
-        logger.error(f"❌ Error procesando webhook: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"❌ Error en webhook: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
 
 
-@app.post("/send-message")
-async def send_message(request: SendMessageRequest):
-    """Envía un mensaje manualmente."""
+@app.post("/")
+async def webhook_raiz(request: Request):
+    """Webhook alternativo en /  (por si Evolution API apunta aquí)."""
     try:
-        success = evolution.send_message(request.telefono, request.mensaje)
-        if success:
-            return {"status": "sent", "telefono": request.telefono}
-        else:
-            raise HTTPException(status_code=500, detail="Error enviando mensaje")
+        data = await request.json()
+        logger.debug(f"📨 Webhook en /: {data}")
+        return await _procesar_webhook(data)
     except Exception as e:
-        logger.error(f"Error enviando mensaje: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"❌ Error en webhook /: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
 
 
-@app.get("/stats")
-async def get_stats():
-    """Obtiene estadísticas del sistema."""
-    # TODO: Implementar estadísticas desde Sheets
-    return {
-        "total_citas": 0,
-        "citas_hoy": 0,
-        "citas_pendientes": 0
-    }
+# ── Lógica interna ─────────────────────────────────────────
 
+async def _procesar_webhook(data: dict) -> dict:
+    event_type = data.get("event")
+
+    if event_type != "messages.upsert":
+        return {"status": "ok", "skipped": event_type}
+
+    message_data = data.get("data", {})
+    key = message_data.get("key", {})
+    message = message_data.get("message", {})
+
+    # Ignorar mensajes propios
+    if key.get("fromMe"):
+        return {"status": "ok", "skipped": "fromMe"}
+
+    telefono = key.get("remoteJid", "").replace("@s.whatsapp.net", "")
+
+    texto = ""
+    if "conversation" in message:
+        texto = message["conversation"]
+    elif "extendedTextMessage" in message:
+        texto = message["extendedTextMessage"].get("text", "")
+
+    if not telefono or not texto:
+        return {"status": "ok", "skipped": "sin_texto"}
+
+    # Anti-duplicados
+    message_id = key.get("id", "")
+    cache_key = f"{telefono}:{message_id}"
+    now = time.time()
+
+    if cache_key in mensaje_cache and now - mensaje_cache[cache_key] < CACHE_TIMEOUT:
+        logger.info(f"⏭️  Duplicado ignorado: {telefono}")
+        return {"status": "ok", "skipped": "duplicado"}
+
+    mensaje_cache[cache_key] = now
+    # Limpiar cache viejo
+    viejos = [k for k, v in mensaje_cache.items() if now - v > CACHE_TIMEOUT]
+    for k in viejos:
+        mensaje_cache.pop(k, None)
+
+    logger.info(f"💬 [{telefono}] → {texto}")
+
+    # Procesar y responder
+    try:
+        respuesta = chatbot.procesar_mensaje(telefono, texto)
+
+        if respuesta:
+            ok = evolution.send_message(telefono, respuesta)
+            if ok:
+                logger.info(f"✅ Respuesta enviada a {telefono}")
+            else:
+                logger.error(f"❌ Fallo al enviar respuesta a {telefono}")
+        else:
+            logger.info(f"🔇 Sin respuesta para {telefono} (bot desactivado o None)")
+
+    except Exception as e:
+        logger.error(f"❌ Error procesando mensaje de {telefono}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+    return {"status": "ok"}
+
+
+# ── Arranque ──────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"🚀 Iniciando servidor en {HOST}:{PORT}")
-    uvicorn.run(app, host=HOST, port=PORT)
+
+    print(f"""
+╔══════════════════════════════════════════════════╗
+║        🏨  HOTEL MERECURE — CHATBOT              ║
+║        📍  Cravo Norte, Arauca                   ║
+╚══════════════════════════════════════════════════╝
+
+  🌐  http://{HOST}:{PORT}
+  📡  Webhook: http://{HOST}:{PORT}/webhook
+  🔧  Health:  http://{HOST}:{PORT}/health
+
+  Presiona CTRL+C para detener
+""")
+
+    uvicorn.run("server:app", host=HOST, port=PORT, reload=DEBUG)

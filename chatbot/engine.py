@@ -1,6 +1,4 @@
 """Motor principal del chatbot - Hotel Merecure."""
-import sys
-import os
 from typing import Any, Optional
 from datetime import datetime
 
@@ -14,12 +12,7 @@ except ImportError:
     logger = SimpleLogger()
 
 from services import WhatsAppService
-try:
-    from services import SheetsClient
-except Exception:
-    SheetsClient = None
-
-from models import Cliente, Sesion
+from models import Sesion
 from config.constants import (
     HOTEL_NOMBRE,
     HOTEL_TELEFONO,
@@ -50,13 +43,6 @@ class ChatbotEngine:
         self.professional_phone = PROFESSIONAL_PHONE
 
     def _init_sheets(self):
-        if SheetsClient:
-            try:
-                self.sheets = SheetsClient()
-                return
-            except Exception:
-                pass
-
         class MockSheets:
             def __init__(self):
                 self.sesiones: dict = {}

@@ -3,23 +3,15 @@ version: '3.8'
 services:
   chatbot:
     build: .
-    container_name: chatbot_barberia
+    container_name: chatbot_hotel_merecure
     ports:
-      - "8000:8000"
+      - "8002:8002"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
       - EVOLUTION_API_URL=${EVOLUTION_API_URL}
       - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
       - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
+      - PROFESSIONAL_PHONE=${PROFESSIONAL_PHONE}
       - HOST=0.0.0.0
-      - PORT=8000
-      - DEBUG=True
+      - PORT=8002
+      - DEBUG=False
     restart: unless-stopped
-    networks:
-      - chatbot_network
-    # NOTA: Asegúrate de crear un archivo .env con tus credenciales
-    # Copia .env.example a .env y configura tus valores
-
-networks:
-  chatbot_network:
-    driver: bridge
