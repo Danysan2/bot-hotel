@@ -5,7 +5,7 @@ services:
     build: .
     container_name: chatbot_hotel_merecure
     ports:
-      - "8002:8002"
+      - "8010:8002"
     environment:
       - EVOLUTION_API_URL=${EVOLUTION_API_URL}
       - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
