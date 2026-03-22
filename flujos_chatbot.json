@@ -1,0 +1,176 @@
+{
+  "flujos": [
+    {
+      "id": "msg_bienvenida",
+      "trigger": "inicio",
+      "type": "text",
+      "message": "✈️ ¡Hola! Bienvenido a *Viajes Colombia Tours* 🇨🇴\n\nEs un gusto tenerte aquí. Somos tu agencia de confianza para descubrir los destinos más increíbles de nuestro país.\n\n¿En qué te podemos ayudar hoy? Elige una opción:\n\n1️⃣ Conocer nuestros destinos en Colombia\n2️⃣ Información sobre nosotros\n3️⃣ Hablar con un asesor\n4️⃣ Ver promociones y ofertas especiales",
+      "esperarRespuesta": true,
+      "opciones": ["1", "2", "3", "4"]
+    },
+    {
+      "id": "msg_destinos",
+      "trigger": "opcion_1",
+      "type": "text",
+      "message": "🗺️ ¡Excelente elección! Colombia tiene destinos increíbles para ti.\n\n¿A cuál de estos lugares te gustaría viajar?\n\n1️⃣ Bogotá\n2️⃣ Medellín\n3️⃣ Cartagena\n4️⃣ Arauca",
+      "esperarRespuesta": true,
+      "opciones": ["1", "2", "3", "4"]
+    },
+    {
+      "id": "msg_hoteles_cartagena",
+      "trigger": "destino_cartagena",
+      "type": "text",
+      "message": "🏖️ *Cartagena* te espera con estos hoteles disponibles:\n\n1️⃣ Hotel Muralla Real\n2️⃣ Hotel Caribe Boutique\n3️⃣ Hotel Playa Dorada\n\n¿Cuál te llama la atención?",
+      "esperarRespuesta": true,
+      "opciones": ["1", "2", "3"]
+    },
+    {
+      "id": "msg_hotel_detalle_1",
+      "trigger": "hotel_muralla_real",
+      "type": "secuencia",
+      "pasos": [
+        {
+          "type": "text",
+          "message": "🏨 *Hotel Muralla Real – Cartagena*\n\n✅ Incluye:\n• Desayuno buffet para 2 personas\n• Habitación doble con vista al mar\n• Acceso a piscina y spa\n• Wi-Fi de alta velocidad\n• Traslado aeropuerto - hotel\n\n💰 *Precio por noche:* $350.000 COP\n📅 Disponibilidad: Todo el año\n\n¿Te interesa este plan o quieres ver otro hotel?"
+        },
+        {
+          "type": "image",
+          "url": "hotel_muralla_real.png",
+          "caption": "📸 Así luce el Hotel Muralla Real 🌿"
+        }
+      ]
+    },
+    {
+      "id": "msg_nosotros",
+      "trigger": "opcion_2",
+      "type": "text",
+      "message": "🏢 *Sobre Viajes Colombia Tours*\n\n¡Llevamos más de 8 años conectando a los colombianos con los destinos más hermosos del país! 🇨🇴\n\n🌟 *¿Qué ofrecemos?*\n• Paquetes turísticos nacionales todo incluido\n• Asesoría personalizada sin costo\n• Planes para familias, parejas y grupos\n• Hoteles seleccionados y verificados\n• Acompañamiento antes, durante y después del viaje\n\n📍 *Sede principal:* Bogotá, Colombia\n⏰ *Horario de atención:* Lunes a sábado, 8am – 6pm\n📞 *Línea directa:* +57 300 000 0000\n\n¿Deseas volver al menú principal? Escribe *menú*"
+    },
+    {
+      "id": "msg_contacto_humano",
+      "trigger": "opcion_3",
+      "type": "handoff",
+      "message": "👤 En un momento uno de nuestros asesores estará contigo.\n\nPor favor cuéntanos brevemente: *¿en qué destino estás interesado?* así podemos ayudarte mejor. 😊",
+      "notificarAgente": true,
+      "mensajeInterno": "⚠️ Cliente solicita atención humana. Revisar conversación."
+    },
+    {
+      "id": "msg_promociones",
+      "trigger": "opcion_4",
+      "type": "text",
+      "message": "🔥 *Promociones y Ofertas Especiales* 🔥\n\n🎉 *Oferta 1 – Cartagena Express*\nPaquete 3 noches para 2 personas\n✅ Hotel + Desayuno + Traslados\n💰 Antes: $1.200.000 | *Ahora: $899.000 COP*\n\n🎉 *Oferta 2 – Medellín City Tour*\nPaquete 2 noches con recorrido por la ciudad\n✅ Hotel + City Tour + Cena romántica\n💰 Antes: $900.000 | *Ahora: $650.000 COP*\n\n⏳ Ofertas válidas hasta el 31 de marzo de 2026\n\n¿Te interesa alguna? Escríbenos o habla con un asesor. ¿Volver al menú? Escribe *menú*"
+    }
+  ],
+  "destinos": {
+    "bogota": {
+      "nombre": "Bogotá",
+      "emoji": "🏛️",
+      "hoteles": [
+        {
+          "nombre": "Hotel Zona T",
+          "precio_noche": 220000,
+          "incluye": [
+            "Desayuno buffet",
+            "Habitación deluxe",
+            "Gimnasio 24/7",
+            "Wi-Fi de alta velocidad",
+            "Centro de negocios"
+          ]
+        },
+        {
+          "nombre": "Hotel Candelaria Colonial",
+          "precio_noche": 150000,
+          "incluye": [
+            "Desayuno típico",
+            "Habitación colonial",
+            "Tour por La Candelaria",
+            "Wi-Fi gratuito"
+          ]
+        }
+      ]
+    },
+    "medellin": {
+      "nombre": "Medellín",
+      "emoji": "🌸",
+      "hoteles": [
+        {
+          "nombre": "Hotel Poblado Plaza",
+          "precio_noche": 250000,
+          "incluye": [
+            "Desayuno buffet",
+            "Habitación ejecutiva",
+            "Gimnasio y spa",
+            "Wi-Fi de alta velocidad",
+            "Parqueadero gratuito"
+          ]
+        },
+        {
+          "nombre": "Hotel Laureles Suites",
+          "precio_noche": 180000,
+          "incluye": [
+            "Desayuno americano",
+            "Suite con cocina",
+            "Piscina",
+            "Wi-Fi gratuito"
+          ]
+        }
+      ]
+    },
+    "cartagena": {
+      "nombre": "Cartagena",
+      "emoji": "🏖️",
+      "hoteles": [
+        {
+          "nombre": "Hotel Muralla Real",
+          "precio_noche": 350000,
+          "incluye": [
+            "Desayuno buffet para 2 personas",
+            "Habitación doble con vista al mar",
+            "Acceso a piscina y spa",
+            "Wi-Fi de alta velocidad",
+            "Traslado aeropuerto - hotel"
+          ],
+          "imagen": "hotel_muralla_real.png"
+        },
+        {
+          "nombre": "Hotel Caribe Boutique",
+          "precio_noche": 280000,
+          "incluye": [
+            "Desayuno continental",
+            "Habitación estándar",
+            "Piscina",
+            "Wi-Fi gratuito"
+          ]
+        },
+        {
+          "nombre": "Hotel Playa Dorada",
+          "precio_noche": 420000,
+          "incluye": [
+            "Todo incluido",
+            "Habitación frente al mar",
+            "3 restaurantes",
+            "Bar en la playa",
+            "Actividades acuáticas"
+          ]
+        }
+      ]
+    },
+    "arauca": {
+      "nombre": "Arauca",
+      "emoji": "🌾",
+      "hoteles": [
+        {
+          "nombre": "Hotel Llanos Plaza",
+          "precio_noche": 120000,
+          "incluye": [
+            "Desayuno llanero",
+            "Habitación estándar",
+            "Piscina",
+            "Wi-Fi gratuito",
+            "Tour por los llanos"
+          ]
+        }
+      ]
+    }
+  }
+}
