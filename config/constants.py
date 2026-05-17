@@ -10,7 +10,7 @@ HOTEL_SEDE = "Cravo Norte, Arauca"
 HOTEL_HORARIO = "Lunes a domingo, 8:00 AM – 6:00 PM"
 
 # Link de reservas en la página web — reemplaza con la URL real
-HOTEL_WEB_RESERVAS = "https://www.hotelmerecure.com/reservas"
+HOTEL_WEB_RESERVAS = "https://hotelmerecure.online"
 
 # Tipos de habitación
 HABITACIONES = [
